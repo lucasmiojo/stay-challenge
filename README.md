@@ -1,98 +1,201 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# 🏦 Pension Withdrawals API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API para **gestão de resgates de planos de previdência privada**, desenvolvida com **Node.js (NestJS)**, **PostgreSQL**, **RabbitMQ** e **Redis**, executada de forma orquestrada via **Docker Compose**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Tecnologias Utilizadas
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Node.js / NestJS** – Framework backend principal
+- **PostgreSQL** – Banco de dados relacional
+- **RabbitMQ** – Sistema de mensageria (filas)
+- **Redis** – Cache e filas auxiliares
+- **Docker Compose** – Orquestração dos serviços
+- **Jest** – Framework de testes automatizados
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 🧭 Visão Geral do Fluxo de Resgates
+
+### 💡 Resumo do processo
+
+1. O usuário solicita um **resgate** (`withdrawal request`).
+2. Se o valor for **resgatável**, é criado um registro com status **`PENDING`**, e uma mensagem é enviada para a fila **`requested-withdrawal`**.
+3. O **consumidor RabbitMQ** processa essa mensagem:
+   - Se a transação **já existir**, cria um registro com status **`REJECTED`** e envia uma mensagem para a fila **`rejected-withdrawal`**.
+   - Caso contrário, cria o registro com status **`CONFIRMED`**.
+4. A API retorna para o cliente o objeto original com status **`PENDING`**.
+
+### 📊 Diagrama de Fluxo (Mermaid)
+
+```mermaid
+flowchart TD
+    A[Usuário solicita resgate] --> B[Verifica se valor é resgatável]
+    B -->|Sim| C[Cria registro PENDING no banco]
+    C --> D[Envia mensagem para fila requested-withdrawal]
+    D --> E[Consumidor processa mensagem]
+    E -->|Transação duplicada| F[Cria registro REJECTED no banco]
+    F --> G[Envia mensagem para fila rejected-withdrawal]
+    E -->|Transação nova| H[Cria registro CONFIRMED no banco]
+    H --> I[Retorna objeto PENDING ao usuário]
+    B -->|Não| F
 ```
 
-## Compile and run the project
+---
 
-```bash
-# development
-$ npm run start
+## 🧱 Estrutura do Projeto
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+```
+src/
+ ├── api/
+ │   ├── balance/
+ │   ├── status/
+ │   └── withdrawals/
+ │   └── taxation/
+ ├── application/
+ │   ├── dtos/
+ │   ├── use-cases/
+ ├── domain/
+ │   ├── entities/
+ │   ├── factories/
+ │   └── services/
+ │   └── value-objects/
+ └── infra/
+     ├── config/
+     │   └── rabbitmq/
+     └── persistence/
+         └── database/
+              ├── postgres
+              ├── redis
+         └── repositories/
 ```
 
-## Run tests
+---
+
+## 🐳 Execução com Docker Compose
+
+### ⚙️ Pré-requisitos
+
+- **Docker** e **Docker Compose** instalados
+- As seguintes portas precisam estar livres:
+  - `5007` (API)
+  - `5432` (PostgreSQL)
+  - `15672` (RabbitMQ)
+  - `6379` (Redis)
+  - `8080` (pgAdmin)
+
+### ▶️ Subir todo o ambiente
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+docker-compose up --build
 ```
 
-## Deployment
+Esse comando sobe **PostgreSQL**, **RabbitMQ**, **Redis**, **pgAdmin** e a **API NestJS**, aguardando o RabbitMQ ficar pronto antes de inicializar a aplicação.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+A API ficará disponível em:  
+👉 **http://localhost:5007**
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+---
+
+## 💾 Acesso aos Painéis e Ferramentas
+
+| Serviço           | URL de Acesso                                    | Credenciais                                  | Descrição                                             |
+| ----------------- | ------------------------------------------------ | -------------------------------------------- | ----------------------------------------------------- |
+| 🐰 **RabbitMQ**   | [http://localhost:15672](http://localhost:15672) | **user / password**                          | Painel de controle e monitoramento de filas.          |
+| 🐘 **pgAdmin**    | [http://localhost:8080](http://localhost:8080)   | **admin@local.com / admin123**               | Interface web para acessar o PostgreSQL (`pensions`). |
+| 🔥 **Redis**      | Porta local `6379`                               | Sem autenticação                             | Cache e filas auxiliares.                             |
+| 🧱 **PostgreSQL** | Host: `localhost` • Porta: `5432`                | **adminuser / newpassword** • DB: `pensions` | Banco principal da aplicação.                         |
+
+> 💡 O painel do **RabbitMQ** exibe em tempo real o status das filas `requested-withdrawal` e `rejected-withdrawal`.  
+> O **pgAdmin** permite consultar e inspecionar os dados persistidos de usuários, planos e resgates.
+
+---
+
+## 🧠 Variáveis de Ambiente
+
+Configuradas automaticamente pelo `docker-compose.yml`:
+
+| Variável       | Descrição               | Valor padrão                         |
+| -------------- | ----------------------- | ------------------------------------ |
+| `PG_HOST`      | Host do banco de dados  | `postgres`                           |
+| `PG_PORT`      | Porta do banco          | `5432`                               |
+| `PG_USER`      | Usuário do banco        | `adminuser`                          |
+| `PG_PASSWORD`  | Senha do banco          | `newpassword`                        |
+| `PG_DATABASE`  | Nome do banco           | `pensions`                           |
+| `RABBITMQ_URL` | URL de conexão RabbitMQ | `amqp://user:password@rabbitmq:5672` |
+| `NODE_ENV`     | Ambiente de execução    | `development`                        |
+
+---
+
+## 🧪 Testes Automatizados
+
+Os testes utilizam **Jest** e cobrem:
+
+- **Controllers**: chamadas HTTP e parâmetros
+- **Use Cases**: lógica de negócio de resgates e confirmações
+- **Produtores RabbitMQ**: envio correto para filas
+- **Repositórios**: simulação de persistência e mocks
+
+### ▶️ Executar testes
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm test
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+ou, para executar em modo de observação:
 
-## Resources
+```bash
+npm run test:watch
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+---
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## 🧰 Comandos Úteis
 
-## Support
+| Comando                      | Descrição                                    |
+| ---------------------------- | -------------------------------------------- |
+| `docker-compose up -d`       | Sobe todos os containers em background       |
+| `docker-compose down -v`     | Remove containers e volumes                  |
+| `docker-compose logs -f api` | Exibe logs em tempo real da API              |
+| `npm run start:dev`          | Inicia o servidor em modo de desenvolvimento |
+| `npm run build`              | Compila o projeto                            |
+| `npm test`                   | Roda os testes automatizados                 |
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+---
 
-## Stay in touch
+## 🧾 Execução Manual (sem Docker)
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Caso queira rodar sem containers:
 
-## License
+```bash
+npm install
+npm run start:dev
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+> Certifique-se de ter um PostgreSQL e RabbitMQ rodando localmente com as variáveis de ambiente configuradas conforme a tabela acima.
+
+---
+
+## 🔍 Monitoramento e Depuração
+
+- Verifique logs do RabbitMQ:
+  ```bash
+  docker-compose logs -f rabbitmq
+  ```
+- Monitore mensagens publicadas:
+  - `requested-withdrawal` → novas solicitações de resgate
+  - `rejected-withdrawal` → resgates rejeitados
+- Verifique filas via painel: [http://localhost:15672](http://localhost:15672)
+
+---
+
+## 🧑‍💻 Autor
+
+**Lucas Costa**  
+Desenvolvedor Backend • Arquitetura Distribuída • Node.js • Web3
+
+---
+
+## 🧾 Licença
+
+Projeto privado — uso interno e restrito.
