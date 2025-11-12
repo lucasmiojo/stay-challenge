@@ -1,0 +1,101 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: adminuser
+      POSTGRES_PASSWORD: newpassword
+      POSTGRES_DB: pensions
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    user: "999:999" # garante permissões corretas no volume
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5672:5672"
+      - "15672:15672" # painel http://localhost:15672
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    restart: always
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api
+    ports:
+      - "5007:5007"
+    environment:
+      NODE_ENV: development
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: adminuser
+      PG_PASSWORD: newpassword
+      PG_DATABASE: pensions
+      RABBITMQ_URL: amqp://user:password@rabbitmq:5672
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run start:dev
+    networks:
+      - app-network
+    restart: always
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "8080:80" # painel http://localhost:8080
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      - app-network
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
