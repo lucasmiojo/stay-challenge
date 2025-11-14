@@ -1,4 +1,4 @@
-# 🏦 Pension Withdrawals API
+# 🏦 Pension API
 
 API para **gestão de resgates de planos de previdência privada**, desenvolvida com **Node.js (NestJS)**, **PostgreSQL**, **RabbitMQ** e **Redis**, executada de forma orquestrada via **Docker Compose**.
 
