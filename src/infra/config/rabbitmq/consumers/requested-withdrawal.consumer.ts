@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfirmationWithdrawalProducer } from '../producers/confirmation-withdrawal.producer';
 import { WithdrawalsConfirmationUseCase } from 'src/application/use-cases/withdrawal-confirmation.use-case';
 import { RabbitMQService } from '../rabbitmq.service';
+import { logger } from '../../observability/logger';
 
 @Injectable()
 export class RequestedWithdrawalConsumer {
@@ -28,7 +29,7 @@ export class RequestedWithdrawalConsumer {
         contractNumber,
       } = message;
 
-      console.log(
+      logger.info(
         `Processing PENDING withdrawal id ${withdrawalId}, contractNumber: ${contractNumber}, CPF ${cpf}, value ${value}, requestDate: ${requestDate}`,
       );
 
@@ -50,9 +51,12 @@ export class RequestedWithdrawalConsumer {
         contractNumber,
       });
 
-      console.log(`Withdrawal processed and event published: ${withdrawalId}`);
+      logger.debug(
+        `Withdrawal with transactionId: ${transactionId}
+         processed with status: ${completedWithdrawal.status} and event published`,
+      );
     } catch (err) {
-      console.error('Error processing requested-withdrawal:', err);
+      logger.error('Error processing requested-withdrawal:', err);
     }
   }
 }

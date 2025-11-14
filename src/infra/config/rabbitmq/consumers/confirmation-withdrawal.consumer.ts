@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { redisClient } from 'src/infra/persistence/database/redis/redis.client';
 import { RabbitMQService } from '../rabbitmq.service';
+import { logger } from '../../observability/logger';
 
 @Injectable()
 export class ConfirmationWithdrawalConsumer {
@@ -15,14 +16,14 @@ export class ConfirmationWithdrawalConsumer {
   async handleMessage(message: any) {
     try {
       const { cpf, contractNumber } = message;
-      console.log(`Event received: confirmed-withdrawal -> CPF ${cpf}`);
+      logger.info(`Event received: confirmed-withdrawal -> CPF ${cpf}`);
 
       const cacheKey = `balance:${cpf}:${contractNumber}`;
       await redisClient.del(cacheKey);
 
-      console.log(`Cache cleaned for user CPF: ${cpf}`);
+      logger.info(`Cache cleaned for user CPF: ${cpf}`);
     } catch (err) {
-      console.error('Error processing confirmed-withdrawal message:', err);
+      logger.error('Error processing confirmed-withdrawal message:', err);
     }
   }
 }

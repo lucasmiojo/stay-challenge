@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitMQService } from '../rabbitmq.service';
+import { logger } from '../../observability/logger';
 
 @Injectable()
 export class RequestedWithdrawalProducer {
@@ -20,6 +21,6 @@ export class RequestedWithdrawalProducer {
       ...payload,
     });
 
-    console.log('Event sent to RabbitMQ (requested-withdrawal):', payload);
+    logger.debug('Event sent to RabbitMQ (requested-withdrawal):', payload);
   }
 }
