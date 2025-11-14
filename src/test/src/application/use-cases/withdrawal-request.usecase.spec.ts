@@ -7,6 +7,7 @@ import { RequestedWithdrawalProducer } from '../../../../infra/config/rabbitmq/p
 import { RejectedWithdrawalProducer } from '../../../../infra/config/rabbitmq/producers/rejected-withdrawal.producer';
 import { Money } from '../../../../domain/value-objects/money';
 import { NotFoundException } from '@nestjs/common';
+import { WithdrawalsMetricsHelper } from '../../../../infra/config/observability/helpers/metrics.helper';
 
 describe('WithdrawalsRequestUseCase', () => {
   let useCase: WithdrawalsRequestUseCase;
@@ -16,16 +17,16 @@ describe('WithdrawalsRequestUseCase', () => {
   let withdrawalsService: jest.Mocked<WithdrawalsService>;
   let requestedWithdrawalProducer: jest.Mocked<RequestedWithdrawalProducer>;
   let rejectedWithdrawalProducer: jest.Mocked<RejectedWithdrawalProducer>;
+  let metricsHelper: jest.Mocked<WithdrawalsMetricsHelper>;
 
   beforeEach(() => {
     userRepo = { findByCpf: jest.fn() } as any;
-    pensionPlansRepo = {
-      findByUserIdAndContractNumber: jest.fn(),
-    } as any;
+    pensionPlansRepo = { findByUserIdAndContractNumber: jest.fn() } as any;
     withdrawalsRepo = { createWithdrawal: jest.fn() } as any;
     withdrawalsService = { request: jest.fn() } as any;
 
     const rabbitMqService = { send: jest.fn() };
+
     requestedWithdrawalProducer = new RequestedWithdrawalProducer(
       rabbitMqService as any,
     ) as any;
@@ -36,6 +37,17 @@ describe('WithdrawalsRequestUseCase', () => {
     requestedWithdrawalProducer.send = jest.fn();
     rejectedWithdrawalProducer.send = jest.fn();
 
+    metricsHelper = {
+      startSpan: jest.fn().mockReturnValue({
+        span: { end: jest.fn() },
+        startTime: Date.now(),
+      }),
+      endSpan: jest.fn(),
+      success: jest.fn(),
+      rejection: jest.fn(),
+      error: jest.fn(),
+    } as any;
+
     useCase = new WithdrawalsRequestUseCase(
       userRepo,
       pensionPlansRepo,
@@ -43,6 +55,7 @@ describe('WithdrawalsRequestUseCase', () => {
       withdrawalsService,
       requestedWithdrawalProducer,
       rejectedWithdrawalProducer,
+      metricsHelper,
     );
   });
 
@@ -57,6 +70,7 @@ describe('WithdrawalsRequestUseCase', () => {
   it('should throw if pension plan not found', async () => {
     userRepo.findByCpf.mockResolvedValueOnce({ id: 1, cpf: '12345678900' });
     pensionPlansRepo.findByUserIdAndContractNumber.mockResolvedValueOnce(null);
+
     await expect(
       useCase.execute('12345678900', new Money(1000), 'CN001'),
     ).rejects.toThrow(NotFoundException);

@@ -6,6 +6,7 @@ import { RejectedWithdrawalProducer } from '../../../../infra/config/rabbitmq/pr
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Money } from '../../../../domain/value-objects/money';
 import { Withdrawals } from '../../../../domain/entities/withdrawal';
+import { WithdrawalsMetricsHelper } from '../../../../infra/config/observability/helpers/metrics.helper';
 
 describe('WithdrawalsConfirmationUseCase', () => {
   let useCase: WithdrawalsConfirmationUseCase;
@@ -13,6 +14,7 @@ describe('WithdrawalsConfirmationUseCase', () => {
   let pensionPlansRepo: jest.Mocked<PensionPlansRepository>;
   let withdrawalsRepo: jest.Mocked<WithdrawalsRepository>;
   let rejectedWithdrawalProducer: jest.Mocked<RejectedWithdrawalProducer>;
+  let metricsHelper: jest.Mocked<WithdrawalsMetricsHelper>;
 
   beforeEach(() => {
     userRepo = { findByCpf: jest.fn() } as any;
@@ -25,11 +27,23 @@ describe('WithdrawalsConfirmationUseCase', () => {
     ) as any;
     rejectedWithdrawalProducer.send = jest.fn();
 
+    metricsHelper = {
+      startSpan: jest.fn().mockReturnValue({
+        span: { end: jest.fn() },
+        startTime: Date.now(),
+      }),
+      endSpan: jest.fn(),
+      success: jest.fn(),
+      rejection: jest.fn(),
+      error: jest.fn(),
+    } as any;
+
     useCase = new WithdrawalsConfirmationUseCase(
       userRepo,
       pensionPlansRepo,
       withdrawalsRepo,
       rejectedWithdrawalProducer,
+      metricsHelper,
     );
   });
 
