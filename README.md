@@ -17,14 +17,57 @@ API para **gestão de resgates de planos de previdência privada**, desenvolvida
 
 ## 🧭 Visão Geral do Fluxo de Resgates
 
+Antes de detalhar o fluxo operacional, é importante entender que, dependendo do tipo de plano (PGBL ou VGBL), o valor final resgatado passa por uma regra específica de tributação aplicada pelo domínio.
+
 ### 💡 Resumo do processo
 
 1. O usuário solicita um **resgate** (`withdrawal request`).
-2. Se o valor for **resgatável**, é criado um registro com status **`PENDING`**, e uma mensagem é enviada para a fila **`requested-withdrawal`**.
-3. O **consumidor RabbitMQ** processa essa mensagem:
+2. A aplicação verifica:
+   - Se existe saldo suficiente.
+   - Se o valor solicitado respeita limites e regras internas.
+3. Se o valor for **resgatável**, é criado um registro com status **`PENDING`**, e uma mensagem é enviada para a fila **`requested-withdrawal`**.
+4. O **consumidor RabbitMQ** processa essa mensagem:
    - Se a transação **já existir**, cria um registro com status **`REJECTED`** e envia uma mensagem para a fila **`rejected-withdrawal`**.
    - Caso contrário, cria o registro com status **`CONFIRMED`**.
-4. A API retorna para o cliente o objeto original com status **`PENDING`**.
+5. A API retorna para o cliente o objeto original com status **`PENDING`**.
+
+---
+
+### 🧠 Como funciona a tributação nos resgates (PGBL e VGBL)
+
+A tributação é aplicada **antes da confirmação** do resgate, de acordo com o tipo de estratégia definida no plano do cliente.  
+O cálculo é sempre feito sobre o Value Object **Money**, composto por:
+
+- `amount`: valor inteiro em centavos
+- `currency`: moeda (ex.: `R$`)
+
+#### 🟦 PGBL — Tributação aplicada sobre o valor total solicitado
+
+No modelo **PGBL**, o imposto incide sobre **todo o valor solicitado**, independentemente do histórico de contribuições.
+
+Características principais:
+
+- A base de cálculo é **100% do montante solicitado**.
+- Regra simples e direta.
+- Costuma resultar em imposto maior que no VGBL.
+- Recomendada para quem declara IR completo, podendo deduzir aportes.
+
+#### 🟩 VGBL — Tributação aplicada somente sobre o lucro
+
+No modelo **VGBL**, o imposto incide **apenas sobre o lucro**, calculado como:
+
+```
+valor solicitado – total já contribuído
+```
+
+Regras principais:
+
+- Se o lucro for zero ou negativo, **não há imposto**.
+- Apenas o excedente vira base tributável.
+- Mantém o Value Object `Money` sempre em estado válido.
+- Costuma ser mais vantajoso quando há muitos aportes acumulados.
+
+---
 
 ### 📊 Diagrama de Fluxo (Mermaid)
 
@@ -72,69 +115,78 @@ src/
 
 ---
 
+## 📈 Observabilidade (Grafana, Loki e Prometheus)
+
+A pasta **`./observability`** contém dois dashboards prontos para importação:
+
+- `dashboard.loki.json` – Logs via Grafana Loki
+- `dashboard.prometheus.json` – Métricas via Prometheus
+
+Para importar:
+
+1. Acesse Grafana
+2. **Create → Import**
+3. Envie o `.json`
+4. Selecione a datasource (Loki ou Prometheus)
+
+---
+
 ## 🐳 Execução com Docker Compose
 
 ### ⚙️ Pré-requisitos
 
-- **Docker** e **Docker Compose** instalados
-- As seguintes portas precisam estar livres:
-  - `5007` (API)
-  - `5432` (PostgreSQL)
-  - `15672` (RabbitMQ)
-  - `6379` (Redis)
-  - `8080` (pgAdmin)
+- Docker e Docker Compose instalados
+- Portas livres:
+  - `5007`
+  - `5432`
+  - `15672`
+  - `6379`
+  - `8080`
 
-### ▶️ Subir todo o ambiente
+### ▶️ Subir o ambiente
 
 ```bash
 docker-compose up --build
 ```
 
-Esse comando sobe **PostgreSQL**, **RabbitMQ**, **Redis**, **pgAdmin** e a **API NestJS**, aguardando o RabbitMQ ficar pronto antes de inicializar a aplicação.
-
-A API ficará disponível em:  
-👉 **http://localhost:5007**
+API disponível em:  
+👉 http://localhost:5007
 
 ---
 
 ## 💾 Acesso aos Painéis e Ferramentas
 
-| Serviço           | URL de Acesso                                    | Credenciais                                  | Descrição                                             |
-| ----------------- | ------------------------------------------------ | -------------------------------------------- | ----------------------------------------------------- |
-| 🐰 **RabbitMQ**   | [http://localhost:15672](http://localhost:15672) | **user / password**                          | Painel de controle e monitoramento de filas.          |
-| 🐘 **pgAdmin**    | [http://localhost:8080](http://localhost:8080)   | **admin@local.com / admin123**               | Interface web para acessar o PostgreSQL (`pensions`). |
-| 🔥 **Redis**      | Porta local `6379`                               | Sem autenticação                             | Cache e filas auxiliares.                             |
-| 🧱 **PostgreSQL** | Host: `localhost` • Porta: `5432`                | **adminuser / newpassword** • DB: `pensions` | Banco principal da aplicação.                         |
-
-> 💡 O painel do **RabbitMQ** exibe em tempo real o status das filas `requested-withdrawal` e `rejected-withdrawal`.  
-> O **pgAdmin** permite consultar e inspecionar os dados persistidos de usuários, planos e resgates.
+| Serviço       | URL de Acesso          | Credenciais                | Descrição                 |
+| ------------- | ---------------------- | -------------------------- | ------------------------- |
+| 🐰 RabbitMQ   | http://localhost:15672 | user / password            | Monitoramento de filas    |
+| 🐘 pgAdmin    | http://localhost:8080  | admin@local.com / admin123 | Interface para PostgreSQL |
+| 🔥 Redis      | localhost:6379         | —                          | Cache                     |
+| 🧱 PostgreSQL | localhost:5432         | adminuser / newpassword    | Banco principal           |
 
 ---
 
 ## 🧠 Variáveis de Ambiente
 
-Configuradas automaticamente pelo `docker-compose.yml`:
-
-| Variável       | Descrição               | Valor padrão                         |
-| -------------- | ----------------------- | ------------------------------------ |
-| `PG_HOST`      | Host do banco de dados  | `postgres`                           |
-| `PG_PORT`      | Porta do banco          | `5432`                               |
-| `PG_USER`      | Usuário do banco        | `adminuser`                          |
-| `PG_PASSWORD`  | Senha do banco          | `newpassword`                        |
-| `PG_DATABASE`  | Nome do banco           | `pensions`                           |
-| `RABBITMQ_URL` | URL de conexão RabbitMQ | `amqp://user:password@rabbitmq:5672` |
-| `NODE_ENV`     | Ambiente de execução    | `development`                        |
+| Variável       | Descrição              | Valor padrão                         |
+| -------------- | ---------------------- | ------------------------------------ |
+| `PG_HOST`      | Host do banco de dados | `postgres`                           |
+| `PG_PORT`      | Porta do banco         | `5432`                               |
+| `PG_USER`      | Usuário                | `adminuser`                          |
+| `PG_PASSWORD`  | Senha                  | `newpassword`                        |
+| `PG_DATABASE`  | Nome do banco          | `pensions`                           |
+| `RABBITMQ_URL` | Conexão RabbitMQ       | `amqp://user:password@rabbitmq:5672` |
+| `NODE_ENV`     | Ambiente               | `development`                        |
 
 ---
 
 ## 🧪 Testes Automatizados
 
-Os testes utilizam **Jest** e cobrem:
+Cobrem:
 
-- **Controllers**: chamadas HTTP e parâmetros
-- **Use Cases**: lógica de negócio de resgates e confirmações
-- **Produtores RabbitMQ**: envio correto para filas
-- **Repositórios**: simulação de persistência e mocks
+- Controllers
+- Use Cases
+- Produtores RabbitMQ
+- Repositórios
 
 ### ▶️ Executar testes
 
@@ -142,7 +194,7 @@ Os testes utilizam **Jest** e cobrem:
 npm test
 ```
 
-ou, para executar em modo de observação:
+Modo watch:
 
 ```bash
 npm run test:watch
@@ -152,40 +204,27 @@ npm run test:watch
 
 ## 🧰 Comandos Úteis
 
-| Comando                      | Descrição                                    |
-| ---------------------------- | -------------------------------------------- |
-| `docker-compose up -d`       | Sobe todos os containers em background       |
-| `docker-compose down -v`     | Remove containers e volumes                  |
-| `docker-compose logs -f api` | Exibe logs em tempo real da API              |
-| `npm run start:dev`          | Inicia o servidor em modo de desenvolvimento |
-| `npm run build`              | Compila o projeto                            |
-| `npm test`                   | Roda os testes automatizados                 |
-
----
-
-## 🧾 Execução Manual (sem Docker)
-
-Caso queira rodar sem containers:
-
-```bash
-npm install
-npm run start:dev
-```
-
-> Certifique-se de ter um PostgreSQL e RabbitMQ rodando localmente com as variáveis de ambiente configuradas conforme a tabela acima.
+| Comando                      | Descrição                   |
+| ---------------------------- | --------------------------- |
+| `docker-compose up -d`       | Sobe em background          |
+| `docker-compose down -v`     | Remove containers e volumes |
+| `docker-compose logs -f api` | Logs da API                 |
+| `npm run start:dev`          | Desenvolvimento             |
+| `npm run build`              | Build                       |
+| `npm test`                   | Testes                      |
 
 ---
 
 ## 🔍 Monitoramento e Depuração
 
-- Verifique logs do RabbitMQ:
-  ```bash
-  docker-compose logs -f rabbitmq
-  ```
-- Monitore mensagens publicadas:
-  - `requested-withdrawal` → novas solicitações de resgate
-  - `rejected-withdrawal` → resgates rejeitados
-- Verifique filas via painel: [http://localhost:15672](http://localhost:15672)
+```bash
+docker-compose logs -f rabbitmq
+```
+
+Filas:
+
+- `requested-withdrawal`
+- `rejected-withdrawal`
 
 ---
 
