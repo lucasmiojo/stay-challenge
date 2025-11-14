@@ -123,19 +123,19 @@ services:
       - app-network
     restart: always
 
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - ./observability/promtail/config.yaml:/etc/promtail/config.yaml
-      - /var/log:/var/log:ro
-    command: ["--config.file=/etc/promtail/config.yaml"]
-    networks:
-      - app-network
-    depends_on:
-      - loki
-    restart: always
+  # promtail:
+  #   image: grafana/promtail:latest
+  #   container_name: promtail
+  #   volumes:
+  #     - /var/lib/docker/containers:/var/lib/docker/containers:ro
+  #     - ./observability/promtail/config.yaml:/etc/promtail/config.yaml
+  #     - /var/log:/var/log:ro
+  #   command: ["--config.file=/etc/promtail/config.yaml"]
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     - loki
+  #   restart: always
 
   # ---- API ----
   api:
