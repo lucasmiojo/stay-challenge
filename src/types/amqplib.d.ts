@@ -1,4 +1,3 @@
-// src/types/amqplib.d.ts
 declare module 'amqplib' {
   export interface Connection {
     createChannel(): Promise<Channel>;

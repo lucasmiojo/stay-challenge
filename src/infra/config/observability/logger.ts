@@ -20,9 +20,9 @@ const lokiOptions = {
 
 export const logger = winston.createLogger({
   level: 'info',
-  format: winston.format.json(), // <- OBRIGATÓRIO
+  format: winston.format.json(),
   transports: [
-    new winston.transports.Console(), // <- sem printf, sem colorize, sem nada
+    new winston.transports.Console(),
     new LokiTransport(lokiOptions),
   ],
 });

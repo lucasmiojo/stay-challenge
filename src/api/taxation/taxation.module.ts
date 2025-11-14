@@ -1,4 +1,3 @@
-// taxation.module.ts
 import { Module } from '@nestjs/common';
 import { PGBLTaxStrategy } from 'src/domain/value-objects/taxation/strategies/pgbl-taxation-strategy';
 import { VGBLTaxStrategy } from 'src/domain/value-objects/taxation/strategies/vgbl-taxation-strategy';

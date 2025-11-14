@@ -17,8 +17,6 @@ import {
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  // private readonly nestLogger = new Logger('HTTP');
-
   intercept(contextExec: ExecutionContext, next: CallHandler): Observable<any> {
     const req = contextExec.switchToHttp().getRequest();
     const res = contextExec.switchToHttp().getResponse();
@@ -29,7 +27,6 @@ export class LoggingInterceptor implements NestInterceptor {
       trace.getSpan(context.active())?.spanContext().traceId || uuidv4();
     const startTime = Date.now();
 
-    // this.nestLogger.log(`[${traceId}] --> ${method} ${url}`);
     logger.info('Incoming request', { method, url, traceId, body: req.body });
 
     return next.handle().pipe(
@@ -37,9 +34,6 @@ export class LoggingInterceptor implements NestInterceptor {
         next: (data) => {
           const duration = Date.now() - startTime;
           const status = res.statusCode;
-          // this.nestLogger.log(
-          //   `[${traceId}] <-- ${method} ${url} ${status} ${duration}ms`,
-          // );
 
           logger.info('Request success', {
             method,
@@ -57,10 +51,6 @@ export class LoggingInterceptor implements NestInterceptor {
         error: (err) => {
           const duration = Date.now() - startTime;
           const status = res.statusCode || 500;
-
-          // this.nestLogger.error(
-          //   `[${traceId}] xx> ${method} ${url} ${status} ${duration}ms - ${err.message}`,
-          // );
 
           logger.error('Request error', {
             method,

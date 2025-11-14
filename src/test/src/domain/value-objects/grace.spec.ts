@@ -13,7 +13,7 @@ describe('Grace Value Object', () => {
 
   it('should be available if current date is after availabilityDate', () => {
     const money = new Money(1000);
-    const date = new Date(Date.now() - 1000); // past
+    const date = new Date(Date.now() - 1000);
     const grace = new Grace(money, date);
 
     expect(grace.available).toBe(true);
@@ -21,7 +21,7 @@ describe('Grace Value Object', () => {
 
   it('should be unavailable if current date is before availabilityDate', () => {
     const money = new Money(1000);
-    const date = new Date(Date.now() + 100000); // future
+    const date = new Date(Date.now() + 100000);
     const grace = new Grace(money, date);
 
     expect(grace.available).toBe(false);

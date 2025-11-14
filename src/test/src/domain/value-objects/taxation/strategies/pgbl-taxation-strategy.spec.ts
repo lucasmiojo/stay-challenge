@@ -8,7 +8,7 @@ describe('PGBLTaxStrategy', () => {
 
     const result = strategy.applyTax({ requestedValue });
 
-    // 15% discount → 85% remains
+    // 15% desconto → 85% resta
     expect(result.amount).toBe(8500);
   });
 

@@ -40,9 +40,9 @@ describe('PensionPlansRepository', () => {
 
     // Simula retorno das queries
     (pgPool.query as jest.Mock)
-      .mockResolvedValueOnce({ rowCount: 1, rows: [fakePlanRow] }) // plano
-      .mockResolvedValueOnce({ rows: fakeContributions }) // contribuições
-      .mockResolvedValueOnce({ rows: fakeWithdrawals }); // saques
+      .mockResolvedValueOnce({ rowCount: 1, rows: [fakePlanRow] })
+      .mockResolvedValueOnce({ rows: fakeContributions })
+      .mockResolvedValueOnce({ rows: fakeWithdrawals });
 
     (PensionPlanFactory.createFromDb as jest.Mock).mockReturnValue(fakeEntity);
 

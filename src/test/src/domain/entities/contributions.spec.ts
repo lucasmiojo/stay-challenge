@@ -21,7 +21,7 @@ describe('Contributions', () => {
   });
 
   it('should return true for isAvailable() when availabilityDate is in the past', () => {
-    const pastDate = new Date(Date.now() - 1000 * 60 * 60); // 1h atrás
+    const pastDate = new Date(Date.now() - 1000 * 60 * 60);
     const contribution = new Contributions({
       id: '1',
       money: makeMoney(1000),
@@ -34,7 +34,7 @@ describe('Contributions', () => {
   });
 
   it('should return false for isAvailable() and true for isUnavailable() when availabilityDate is in the future', () => {
-    const futureDate = new Date(Date.now() + 1000 * 60 * 60); // 1h no futuro
+    const futureDate = new Date(Date.now() + 1000 * 60 * 60);
     const contribution = new Contributions({
       id: '2',
       money: makeMoney(2000),

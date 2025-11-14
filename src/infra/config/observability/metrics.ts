@@ -37,7 +37,6 @@ export const withdrawalConfirmationDuration = new client.Histogram({
   labelNames: ['status'],
 });
 
-// Conta quantas confirmações foram processadas
 export const withdrawalConfirmationTotal = new client.Counter({
   name: 'withdrawal_confirmation_total',
   help: 'Withdrawals confirmation total number',

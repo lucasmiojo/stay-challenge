@@ -21,7 +21,6 @@ export class WithdrawalsService {
       });
     }
 
-    // Caso contrário, calcula o valor líquido após impostos
     const redeemableValue = taxation.applyTax({
       requestedValue,
       totalContributed: available,

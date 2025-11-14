@@ -2,7 +2,6 @@ import { Money } from '../../../../domain/value-objects/money';
 import { CheckStatusUseCase } from '../../../../application/use-cases/check-status.use-case';
 import { WithdrawalsRepository } from '../../../../infra/persistence/repositories/withdrawals.repository';
 import { NotFoundException } from '@nestjs/common';
-// import { StatusResponseDTO } from '../../../../application/dtos/status-dto';
 import { Withdrawals } from '../../../../domain/entities/withdrawal';
 
 describe('CheckStatusUseCase', () => {

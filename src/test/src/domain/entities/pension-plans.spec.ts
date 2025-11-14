@@ -13,8 +13,8 @@ describe('PensionPlan Entity', () => {
 
   beforeEach(() => {
     now = new Date();
-    pastDate = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 10); // 10 days ago
-    futureDate = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 10); // 10 days later
+    pastDate = new Date(now.getTime() - 1000 * 60 * 60 * 24 * 10);
+    futureDate = new Date(now.getTime() + 1000 * 60 * 60 * 24 * 10);
   });
 
   it('should create a PensionPlan instance with valid properties', () => {
@@ -92,7 +92,7 @@ describe('PensionPlan Entity', () => {
       id: 'c2',
       money: new Money(20000), // R$200
       startDate: pastDate,
-      availabilityDate: futureDate, // not yet available
+      availabilityDate: futureDate,
     });
 
     const withdrawalConfirmed = new Withdrawals({
@@ -116,13 +116,6 @@ describe('PensionPlan Entity', () => {
     });
 
     const result: Balance = plan.calculateBalance();
-
-    // yield = +20%
-    // total contributions with yield: 10000*1.2 + 20000*1.2 = 36000
-    // totalWithdrawn = 5000
-    // totalBalance = 36000 - 5000 = 31000
-    // availableBalance = 10000 - 5000 = 5000
-    // notAvailableBalance = 20000*1.2 = 24000
 
     expect(result).toBeInstanceOf(Balance);
     expect(result.total.amount).toBe(31000);
@@ -177,8 +170,8 @@ describe('PensionPlan Entity', () => {
 
     const result = plan.calculateBalance();
 
-    // total with yield = 15000 * 1.2 = 18000
-    // all unavailable
+    // total com yield = 15000 * 1.2 = 18000
+    // todos indisponiveis
     expect(result.total.amount).toBe(18000);
     expect(result.available.amount).toBe(0);
     expect(result.notAvailable.amount).toBe(18000);

@@ -8,30 +8,7 @@ import { WithdrawalsUseCaseModule } from 'src/api/withdrawal/use-cases/withdrawa
 import { RejectedWithdrawalProducer } from './rabbitmq/producers/rejected-withdrawal.producer';
 
 @Module({
-  // kafka
-
-  // providers: [
-  //   KafkaService,
-  //   RequestedWithdrawalConsumer,
-  //   ConfirmationWithdrawalConsumer,
-  //   RequestedWithdrawalProducer,
-  //   ConfirmationWithdrawalProducer,
-  //   UsersRepository,
-  //   PensionPlansRepository,
-  //   WithdrawalsRepository,
-  //   WithdrawalsService,
-  //   WithdrawalsConfirmationUseCase,
-  // ],
-  // exports: [
-  //   RequestedWithdrawalProducer,
-  //   ConfirmationWithdrawalProducer,
-  //   KafkaService,
-  // ],
-
-  imports: [
-    forwardRef(() => WithdrawalsUseCaseModule), // 👈 resolve o ciclo inverso
-  ],
-  // rabbitmq
+  imports: [forwardRef(() => WithdrawalsUseCaseModule)],
   providers: [
     RabbitMQService,
     ConfirmationWithdrawalProducer,
@@ -39,14 +16,7 @@ import { RejectedWithdrawalProducer } from './rabbitmq/producers/rejected-withdr
     ConfirmationWithdrawalConsumer,
     RequestedWithdrawalConsumer,
     RejectedWithdrawalProducer,
-    // WithdrawalsConfirmationUseCase,
-    // UsersRepository,
-    // PensionPlansRepository,
-    // WithdrawalsRepository,
-    // WithdrawalsService,
-    // WithdrawalsConfirmationUseCase,
   ],
-  // controllers: [ConfirmationWithdrawalConsumer, RequestedWithdrawalConsumer],
   exports: [
     RabbitMQService,
     ConfirmationWithdrawalProducer,

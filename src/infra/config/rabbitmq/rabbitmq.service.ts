@@ -8,9 +8,8 @@ export class RabbitMQService implements OnModuleDestroy {
   private isConnecting = false;
 
   private async ensureConnection() {
-    if (this.channel) return; // já conectado
+    if (this.channel) return;
     if (this.isConnecting) {
-      // se outro processo já está conectando, espera um pouco
       while (!this.channel) {
         await new Promise((res) => setTimeout(res, 100));
       }

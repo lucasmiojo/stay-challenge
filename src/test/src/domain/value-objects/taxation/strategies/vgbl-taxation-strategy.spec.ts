@@ -10,18 +10,18 @@ describe('VGBLTaxStrategy', () => {
     const result = strategy.applyTax({ requestedValue, totalContributed });
 
     // profit = 15000 - 10000 = 5000 → 15% tax = 750
-    // final = 15000 - 750 = 14250
+    // result = 15000 - 750 = 14250
     expect(result.amount).toBe(14250);
   });
 
   it('should not apply tax when there is no profit', () => {
     const strategy = new VGBLTaxStrategy();
     const requestedValue = new Money(9000);
-    const totalContributed = new Money(10000); // loss, no tax
+    const totalContributed = new Money(10000);
 
     const result = strategy.applyTax({ requestedValue, totalContributed });
 
-    expect(result.amount).toBe(9000); // unchanged
+    expect(result.amount).toBe(9000);
   });
 
   it('should return a Money instance', () => {

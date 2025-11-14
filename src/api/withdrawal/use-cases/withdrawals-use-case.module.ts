@@ -9,9 +9,7 @@ import { MessagingModule } from 'src/infra/config/messaging.module';
 import { WithdrawalsMetricsHelper } from 'src/infra/config/observability/helpers/metrics.helper';
 
 @Module({
-  imports: [
-    forwardRef(() => MessagingModule), // 👈 resolve o ciclo inverso
-  ],
+  imports: [forwardRef(() => MessagingModule)],
   providers: [
     UsersRepository,
     PensionPlansRepository,
