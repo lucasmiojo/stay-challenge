@@ -3,8 +3,8 @@ import { Money } from '../../../../domain/value-objects/money';
 
 describe('Withdrawals Entity', () => {
   const now = new Date();
-  const pastDate = new Date(now.getTime() - 86400000); // 1 day ago
-  const futureDate = new Date(now.getTime() + 86400000); // 1 day ahead
+  const pastDate = new Date(now.getTime() - 86400000);
+  const futureDate = new Date(now.getTime() + 86400000);
 
   const baseProps = {
     id: 'w1',
