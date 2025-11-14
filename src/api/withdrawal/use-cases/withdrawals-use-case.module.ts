@@ -6,6 +6,7 @@ import { WithdrawalsService } from 'src/domain/services/withdrawal-service';
 import { WithdrawalsConfirmationUseCase } from 'src/application/use-cases/withdrawal-confirmation.use-case';
 import { WithdrawalsRequestUseCase } from 'src/application/use-cases/withdrawal-request.use-case';
 import { MessagingModule } from 'src/infra/config/messaging.module';
+import { WithdrawalsMetricsHelper } from 'src/infra/config/observability/helpers/metrics.helper';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { MessagingModule } from 'src/infra/config/messaging.module';
     WithdrawalsService,
     WithdrawalsConfirmationUseCase,
     WithdrawalsRequestUseCase,
+    WithdrawalsMetricsHelper,
   ],
   exports: [WithdrawalsConfirmationUseCase, WithdrawalsRequestUseCase],
 })
